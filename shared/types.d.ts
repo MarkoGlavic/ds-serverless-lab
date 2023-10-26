@@ -25,9 +25,4 @@ export type Movie = {
     roleName?: string
   }
 
-  export type MovieIDCastMemberQueryParams = {
-    cast?: string
-  }
-
-
   
