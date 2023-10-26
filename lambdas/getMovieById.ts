@@ -1,8 +1,20 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, QueryCommand, QueryCommandInput } from "@aws-sdk/lib-dynamodb";
+import { movieCasts } from "../seed/movies";
+
+
+import Ajv from "ajv";
+import schema from "../shared/types.schema.json";
+
+const ajv = new Ajv();
+const isValidQueryParams = ajv.compile(
+  schema.definitions["MovieIDCastMemberQueryParams"] || {}
+);
 
 const ddbDocClient = createDDbDocClient();
+
+
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
@@ -13,6 +25,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     // const movieId = parameters ? parseInt(parameters.movieId) : undefined;
     const parameters  = event?.pathParameters;
     const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
+    const cast = event?.queryStringParameters?.cast ? true : false;
 
 
     if (!movieId) {
@@ -22,6 +35,29 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
           "content-type": "application/json",
         },
         body: JSON.stringify({ Message: "Missing movie Id" }),
+      };
+    }
+
+    const queryParams = event.queryStringParameters;
+    if (!queryParams) {
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ message: "Missing query parameters" }),
+      };
+    }
+    if (!isValidQueryParams(queryParams)) {
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          message: `Incorrect type. Must match Query parameters schema`,
+          schema: schema.definitions["MovieIDCastMemberQueryParams"],
+        }),
       };
     }
 
@@ -44,6 +80,24 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     const body = {
       data: commandOutput.Item,
     };
+
+
+    if (cast) {
+
+      let commandInput: QueryCommandInput = {
+        TableName: "MovieCast",
+        KeyConditionExpression: "movieId = :m",
+        ExpressionAttributeValues: {
+          ":m": movieId,
+        },
+      };
+
+      const castOutput = await ddbDocClient.send(
+        new QueryCommand(commandInput)
+      );
+
+      body.data.cast = castOutput.Items;
+    }
 
     // Return Response
     return {

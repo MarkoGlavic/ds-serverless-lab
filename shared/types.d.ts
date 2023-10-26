@@ -1,16 +1,16 @@
-
 export type Movie = {
-    movieId: number;
-    genre_ids: number[];
-    original_language : string;
-    overview: string;
-    popularity: number;
-    release_date: string;
-    title: string
-    video: boolean;
-    vote_average: number;
-    vote_count: number
-  }
+  movieId: number;
+  genre_ids: number[];
+  original_language : string;
+  overview: string;
+  popularity: number;
+  release_date: string;
+  title: string
+  video: boolean;
+  vote_average: number;
+  vote_count: number
+}
+
 
   export type MovieCast = {
     movieId: number;
@@ -24,3 +24,10 @@ export type Movie = {
     actorName?: string;
     roleName?: string
   }
+
+  export type MovieIDCastMemberQueryParams = {
+    cast?: string
+  }
+
+
+  
